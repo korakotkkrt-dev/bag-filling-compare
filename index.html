@@ -1916,7 +1916,7 @@ var TEX_LOGO='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
   }
   function frame(now) { var dt = Math.min(0.1, (now - last) / 1000); last = now; draw(dt); requestAnimationFrame(frame); }
   loadingEl.hidden = true;
-  select('a');
+  var startTab = (location.hash || '').slice(1); select(tabs.some(function (t) { return t.id === startTab; }) ? startTab : 'a');
   requestAnimationFrame(frame);
   window.__bag = { select: select, state: function () { return { T: T, total: total, tab: curTab && curTab.id }; }, setT: function (x) { T = x; playing = false; }, view: view, draw: draw, cam: function (a, b, c, x, y, z) { camera.position.set(a, b, c); controls.target.set(x, y, z); controls.update(); } };
 })();
