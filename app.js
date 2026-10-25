@@ -311,7 +311,7 @@
     root.add(ss);
     var palletG = new THREE.Group(); palletG.position.set(0, 0, 0); root.add(palletG);
     var pb = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.9), wood); pb.position.y = 0.06; palletG.add(pb);
-    var pbags = []; for (var k = 0; k < 4; k++) for (var r = 0; r < 3; r++) { var m = new THREE.Mesh(pillowGeo(0.69, 0.305, 0.14, 3.4), mat(CL.flex)); m.position.set(0, 0.12 + k * 0.125, -0.31 + r * 0.31); palletG.add(m); pbags.push(m); }
+    var pbags = []; for (var k = 0; k < 4; k++) for (var r = 0; r < 3; r++) { var m = new THREE.Mesh(pillowGeo(0.76, 0.30, 0.14, 3.4), mat(CL.flex)); m.position.set(0, 0.12 + k * 0.125, -0.31 + r * 0.31); palletG.add(m); pbags.push(m); }
     var p1 = new Person(0x2e8b57), p2 = new Person(0xe07b00); place(p1, -1.05, 0, Math.PI / 2); place(p2, 1.05, 0, -Math.PI / 2); root.add(p1.g, p2.g);
     function update(si, u, t) {
       var open = si === 0 ? ease(u) : 1, fill = 0, heapS = 0, tilt = 0, sweep = 0, tamp = 0;
@@ -369,10 +369,10 @@
     var pe = new Person(0xe07b00); place(pe, -2.3, 0.2, 0); pe.bend = 0; pe.crouch = 0; root.add(pe.g); pe.update(root, 0);
     var wb = wingedLying(); root.add(wb);
     var bb = new THREE.Group(); var bp = new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green)); bp.position.x = -0.115; bb.add(bp); var bt = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.012, 0.14), mat(CL.green)); bt.position.set(0.275, 0.006, 0); bb.add(bt); bb.position.set(2.4, 0, 0); root.add(bb);
-    var fb = new THREE.Mesh(pillowGeo(0.69, 0.305, 0.14, 3.4), mat(CL.flex)); fb.position.set(4.7, 0, 0); root.add(fb);
+    var fb = new THREE.Mesh(pillowGeo(0.76, 0.30, 0.14, 3.4), mat(CL.flex)); fb.position.set(4.7, 0, 0); root.add(fb);
     function lab(name, w, x, color, wc) { var s = sprite(name, color, 2.6); s.position.set(x - 0.9, 1.5, 0.3); root.add(s); var s2 = sprite(w, wc, 2.6); s2.position.set(x - 0.9, 1.2, 0.3); root.add(s2); }
     lab('กระสอบมีปีก (GGS)', 'ทราย ~55 ลิตร · ~89 กก.', 0, '#8a5a14', '#cc0000');
-    lab('กระสอบบังเกอร์', 'ทราย ~17 ลิตร · ~26 กก.', 2.4, '#2f4f25', '#008800');
+    lab('กระสอบบังเกอร์', 'ทราย ~11–17 ลิตร · ~18–26 กก.', 2.4, '#2f4f25', '#008800');
     lab('Flex MSE', 'ทราย 32 ลิตร · ~51 กก. (ทรายล้วน)', 4.7, '#444', '#cc6600');
     var sizes = { n: 'ขนาดหลังกรอก เทียบกับคนสูง 1.70 ม.', a: 'กระสอบมีปีกใหญ่ที่สุด ผ้าแบนก่อนกรอก 1.50 x 0.75 ม. ส่วนบรรจุ 0.75 x 0.45 ม.', b: 'ขนาดหลังกรอกเป็นค่าประมาณจากแบบ ป้ายสินค้า และคลิป ไม่ใช่การวัดจริง', d: 10 };
     function update() { }
@@ -393,7 +393,7 @@
     function add(geo, color, x, y, z, ry) { var m = new THREE.Mesh(geo, mat(color)); m.position.set(x, y, z); m.rotation.y = ry || 0; g.add(m); }
     if (kind === 'A') { for (var l = 0; l < 2; l++) { var wbg = wingedLying(); wbg.position.set(0, 0.385 + l * 0.2, 0.33); wbg.rotation.y = Math.PI / 2; wbg.scale.set(0.7, 1, 0.7); g.add(wbg); } }
     else if (kind === 'B') { var layer = 0; [2, 2, 2, 1].forEach(function (n) { for (var k = 0; k < n; k++) add(pillowGeo(0.52, 0.31, 0.13, 3), CL.green, n === 2 ? (k ? 0.15 : -0.15) : 0, 0.385 + layer * 0.13, 0.33, Math.PI / 2); layer++; }); }
-    else { for (var l2 = 0; l2 < 2; l2++) for (var k2 = 0; k2 < 2; k2++) add(pillowGeo(0.69, 0.305, 0.14, 3.4), CL.flex, k2 ? 0.16 : -0.16, 0.385 + l2 * 0.14, 0.33, Math.PI / 2); }
+    else { for (var l2 = 0; l2 < 2; l2++) for (var k2 = 0; k2 < 2; k2++) add(pillowGeo(0.76, 0.30, 0.14, 3.4), CL.flex, k2 ? 0.16 : -0.16, 0.385 + l2 * 0.14, 0.33, Math.PI / 2); }
     return g;
   }
   function ScenarioBarrow() {
@@ -429,7 +429,7 @@
     function bagMesh(k) {
       if (k === 'A') { var wg = wingedLying(); wg.scale.set(0.75, 1, 0.75); return wg; }
       if (k === 'B') return new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green));
-      return new THREE.Mesh(pillowGeo(0.69, 0.305, 0.14, 3.4), mat(CL.flex));
+      return new THREE.Mesh(pillowGeo(0.76, 0.30, 0.14, 3.4), mat(CL.flex));
     }
     lanes.forEach(function (ln) {
       var n = ln.k === 'A' ? 2 : 1, ps = []; for (var i = 0; i < n; i++) { var p = new Person(i ? 0xe07b00 : 0x2e8b57); ps.push(p); root.add(p.g); }
