@@ -65,7 +65,7 @@ th{background:var(--bg)}
     <label style="font-size:13px"><input id="loop" type="checkbox" checked> วนซ้ำ</label>
   </div>
   <div id="steps" style="display:flex"></div>
-  <div class="views"><button data-view="front">หน้า</button> <button data-view="obl">เฉียง</button> <button data-view="side">ข้าง</button> <button data-view="top">บน</button> <button id="xray" title="ทำให้ผ้ากระสอบโปร่งเพื่อดูทรายข้างใน">มองทะลุถุง</button></div>
+  <div class="views"><button data-view="front">หน้า</button> <button data-view="obl">เฉียง</button> <button data-view="side">ข้าง</button> <button data-view="top">บน</button> <button id="xray" class="on" title="ทำให้ผ้ากระสอบโปร่งเพื่อดูทรายข้างใน">มองทะลุถุง</button></div>
 </div>
 <div class="note">ภาพจำลองเพื่อเทียบขั้นตอน ไม่ใช่เวลาจริงหน้างาน ขนาดและน้ำหนักเป็นค่าคำนวณ/ประมาณจากแบบกระสอบมีปีก (690044 CE แผ่น 8/8) ป้ายสินค้ากระสอบบังเกอร์ และคลิปของ Flex MSE ยังไม่ได้ชั่งหรือวัดของจริง ท่าทางคนและเครื่องมือเป็นแบบง่าย ปากกรวยของกระสอบมีปีกวาดตามแบบ (กว้างบน คอแคบ ~0.19 ม.)</div>
 <footer>ลากเพื่อหมุนมุมมอง · บีบนิ้ว/เลื่อนล้อเพื่อซูม · ไฟล์ SketchUp และภาพสรุปอยู่ในโฟลเดอร์ <code>sketchup/</code> ของโปรเจกต์</footer>
@@ -1189,7 +1189,7 @@ var TEX_LOGO='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
   }
 
   // ===== realistic bag fabrics and geometry (inserted into app.js) =====
-  var XR = { on: false, mats: [] };      // x-ray toggle: shells become see-through to show the sand inside
+  var XR = { on: true, mats: [] };      // x-ray toggle: shells become see-through to show the sand inside
   function setXray(on) {
     XR.on = on;
     XR.mats.forEach(function (m) { m.transparent = on; m.opacity = on ? 0.38 : 1; m.depthWrite = !on; m.needsUpdate = true; });

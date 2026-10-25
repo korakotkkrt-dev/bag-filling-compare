@@ -62,7 +62,7 @@
   }
 
   // ===== realistic bag fabrics and geometry (inserted into app.js) =====
-  var XR = { on: false, mats: [] };      // x-ray toggle: shells become see-through to show the sand inside
+  var XR = { on: true, mats: [] };      // x-ray toggle: shells become see-through to show the sand inside
   function setXray(on) {
     XR.on = on;
     XR.mats.forEach(function (m) { m.transparent = on; m.opacity = on ? 0.38 : 1; m.depthWrite = !on; m.needsUpdate = true; });
