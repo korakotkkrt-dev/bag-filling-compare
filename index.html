@@ -1183,6 +1183,16 @@ th{background:var(--bg)}
     return g;
   }
 
+  // winged bag lying on the ground (real drawing): pillow over the soil part, flat sheet 1.50 x 0.75, V-shaped upper flap at the back
+  function wingedLying() {
+    var g = new THREE.Group(), tan = mat(CL.tan);
+    var body = new THREE.Mesh(pillowGeo(0.75, 0.45, 0.2, 3.2), tan); body.position.y = 0.006; g.add(body);
+    var sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.006, 0.75), tan); sheet.position.set(0, 0.003, 0.15); g.add(sheet);
+    var shp = new THREE.Shape(); shp.moveTo(-0.095, 0); shp.lineTo(0.095, 0); shp.lineTo(0.375, 0.3); shp.lineTo(-0.375, 0.3); shp.lineTo(-0.095, 0);
+    var fl = new THREE.Mesh(new THREE.ShapeGeometry(shp), mat(CL.tanl)); fl.rotation.x = Math.PI / 2; fl.position.set(0, 0.008, 0.225); g.add(fl);
+    [-1, 1].forEach(function (s) { var sm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.008, 0.75), mat(0x6b5428)); sm.position.set(s * 0.375, 0.004, 0.15); g.add(sm); });
+    return g;
+  }
   function sprite(text, color, w, h) {
     var c = document.createElement('canvas'); c.width = 1100; c.height = 140;
     var x = c.getContext('2d'); x.font = 'bold 54px Tahoma, "Noto Sans Thai", sans-serif'; x.fillStyle = color || '#222'; x.textBaseline = 'middle';
@@ -1262,20 +1272,26 @@ th{background:var(--bg)}
   // ================= A: winged bag =================
   function ScenarioA(ox, oz) {
     var root = newRoot(ox, oz), tan = mat(CL.tan), shellMat = mat(0xf5efe0, { transparent: true, opacity: 0.35, depthWrite: false });
+    // real drawing (flapped soilbag detail): sheet 1.50 x 0.75 m, side flaps 0.35 m each, seams 2.5 cm,
+    // soil filling part 0.75 x 0.45 m at the bottom centre, upper flap = V-shaped region above it
     var pocket = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.45, 1), shellMat); pocket.position.y = 0.225; root.add(pocket);
     var edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.75, 0.45, 1)), new THREE.LineBasicMaterial({ color: 0x8a6b30 })); pocket.add(edges);
-    [-1, 1].forEach(function (s) { var w = new THREE.Mesh(new THREE.BoxGeometry(0.375, 0.45, 0.012), tan); w.position.set(s * 0.5625, 0.225, 0); root.add(w); });
-    // hopper: wide top (0.75) narrow neck (0.19)
-    var hg = new THREE.BufferGeometry(), hp = new Float32Array(8 * 3);
-    hg.setAttribute('position', new THREE.BufferAttribute(hp, 3)); hg.setIndex([0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]);
-    var hopper = new THREE.Mesh(hg, mat(CL.tanl, { transparent: true, opacity: 0.6, depthWrite: false, flatShading: true })); hopper.position.y = 0.45; root.add(hopper);
-    var hedges = new THREE.LineSegments(new THREE.EdgesGeometry(hg), new THREE.LineBasicMaterial({ color: 0x8a6b30 })); hopper.add(hedges);
-    function setHopper(topD, flat) {
-      var H = 0.3 * (1 - 0.8 * flat), a = [[-0.095, 0, -0.03], [0.095, 0, -0.03], [0.095, 0, 0.03], [-0.095, 0, 0.03], [-0.375, H, -topD / 2], [0.375, H, -topD / 2], [0.375, H, topD / 2], [-0.375, H, topD / 2]];
-      for (var i = 0; i < 8; i++) { hp[i * 3] = a[i][0]; hp[i * 3 + 1] = a[i][1]; hp[i * 3 + 2] = a[i][2]; }
-      hg.attributes.position.needsUpdate = true; hg.computeBoundingSphere();
-      hedges.geometry.dispose(); hedges.geometry = new THREE.EdgesGeometry(hg);
-    }
+    var seamMat = mat(0x6b5428);
+    [-1, 1].forEach(function (s) {
+      var w = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.75, 0.012), tan); w.position.set(s * 0.5625, 0.375, 0); root.add(w);
+      var sm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.75, 0.016), seamMat); sm.position.set(s * 0.375, 0.375, 0); root.add(sm);
+      var sh = new THREE.Shape(); sh.moveTo(s * 0.375, 0.75); sh.lineTo(s * 0.375, 0.45); sh.lineTo(s * 0.095, 0.45); sh.lineTo(s * 0.375, 0.75);
+      root.add(new THREE.Mesh(new THREE.ShapeGeometry(sh), tan));
+    });
+    var fl = [[-0.375, 0.75, 0], [-0.095, 0.45, 0], [0.375, 0.75, 0], [0.095, 0.45, 0], [-0.375, 0.45, 0], [0.375, 0.45, 0]];
+    var foldGeo = new THREE.BufferGeometry().setFromPoints(fl.map(function (q) { return v3(q[0], q[1], 0.01); }));
+    var fold = new THREE.LineSegments(foldGeo, new THREE.LineDashedMaterial({ color: 0x3a2c10, dashSize: 0.03, gapSize: 0.02 })); fold.computeLineDistances(); root.add(fold);
+    // upper flap (V region): pivots on the soil-part top edge
+    var flap = new THREE.Group(); flap.position.y = 0.45; root.add(flap);
+    var fs = new THREE.Shape(); fs.moveTo(-0.095, 0); fs.lineTo(0.095, 0); fs.lineTo(0.375, 0.3); fs.lineTo(-0.375, 0.3); fs.lineTo(-0.095, 0);
+    flap.add(new THREE.Mesh(new THREE.ShapeGeometry(fs), mat(CL.tanl, { transparent: true, opacity: 0.8 })));
+    flap.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.ShapeGeometry(fs)), new THREE.LineBasicMaterial({ color: 0x8a6b30 })));
+    function flapCorner(side, ang) { return v3(side * 0.375, 0.45 + 0.3 * Math.cos(ang), 0.3 * Math.sin(ang)); }
     // sand height-field
     var sg = new THREE.BoxGeometry(0.72, 1, 1, 24, 1, 1), sbase = sg.attributes.position.array.slice();
     var sand = new THREE.Mesh(sg, mat(CL.sand, { flatShading: true })); root.add(sand);
@@ -1302,19 +1318,17 @@ th{background:var(--bg)}
 
     var state = { fill: 0, spread: 0, thick: 0.02 };
     function update(si, u, t) {
-      var topD = 0.04, flat = 0, hopen = 0, pressing = 0, cyc = null, fill = 0, spread = 0;
-      if (si === 0) { hopen = ease(u); fill = 0; }
-      else if (si === 1) { hopen = 1; fill = 0.45 * u; spread = 0.15 * u; cyc = (u * 3) % 1; }
-      else if (si === 2) { hopen = 1; fill = 0.45 + 0.5 * u; spread = 0.15 + 0.85 * ease(u); cyc = (u * 4) % 1; pressing = Math.sin(u * Math.PI * 8) > 0 ? 1 : 0; }
-      else { hopen = 1; fill = 0.95 + 0.05 * u; spread = 1; flat = ease(u); }
-      topD = 0.04 + 0.26 * hopen; setHopper(topD, flat);
-      var thick = 0.02 + 0.18 * Math.min(1, fill / 0.95); pocket.scale.z = thick; edges.scale.set(1, 1, 1);
+      var ang = -0.6, pressing = 0, cyc = null, fill = 0, spread = 0;
+      if (si === 0) { ang = -0.6 * ease(u); fill = 0; }
+      else if (si === 1) { fill = 0.45 * u; spread = 0.15 * u; cyc = (u * 3) % 1; }
+      else if (si === 2) { fill = 0.45 + 0.5 * u; spread = 0.15 + 0.85 * ease(u); cyc = (u * 4) % 1; pressing = Math.sin(u * Math.PI * 8) > 0 ? 1 : 0; }
+      else { fill = 0.95 + 0.05 * u; spread = 1; ang = lerp(-0.6, 2.9, ease(u)); }
+      flap.rotation.x = ang; flap.position.z = ang > 1 ? pocket.scale.z / 2 : 0;
+      var thick = 0.02 + 0.18 * Math.min(1, fill / 0.95); pocket.scale.z = thick;
       setSand(fill, spread, thick * 0.8);
-      // P1 holds rim (follows hopper opening)
-      var rl = rimL.clone(), rr = rimR.clone();
-      if (si === 0) { rl = lerpV(v3(-0.3, 0.55, -0.45), rimL, ease(u)); rr = lerpV(v3(0.3, 0.55, -0.45), rimR, ease(u)); }
-      if (si === 3) { var k = ease(u); rl = lerpV(rimL, v3(-0.2, 0.5, 0), k); rr = lerpV(rimR, v3(0.2, 0.5, 0), k); }
-      rl.y += flat * -0.2; rr.y += flat * -0.2;
+      // P1 holds the two top corners of the upper flap
+      var rl = flapCorner(-1, ang), rr = flapCorner(1, ang);
+      if (si === 0) { rl = lerpV(v3(-0.3, 0.55, -0.45), rl, ease(u)); rr = lerpV(v3(0.3, 0.55, -0.45), rr, ease(u)); }
       p1.bend = 0.25; p1.hands = [rl, rr]; p1.update(root, t);
       // P2
       stream.visible = false;
@@ -1330,19 +1344,19 @@ th{background:var(--bg)}
       } else {
         shovel.g.visible = true; p2.crouch = 0.1; p2.bend = 0.35;
         var c = shovelCycle(cyc, pl, mouthGrip, mouthTip); shovel.set(c.grip, c.tip, c.load); p2.hands = [c.grip, c.grip.clone().lerp(c.tip, 0.38)];
-        if (c.pour) { stream.visible = true; setLimb(stream, c.tip.clone().add(v3(0, 0, 0)), v3(0, topY, 0)); }
+        if (c.pour) { stream.visible = true; setLimb(stream, c.tip.clone().add(v3(0, 0, 0)), v3(0, Math.max(topY, 0.3), 0)); }
       }
       if (si !== 2) { p2.crouch = 0.05; }
       p2.update(root, t);
-      if (si === 3 || (si === 2 && pressing)) { /* shovel hidden */ } else { shovel.g.visible = true; }
+      
     }
-    return { root: root, update: update, view: { c: v3(0.3, 0.7, 0), d: 4.2 }, steps: A_STEPS };
+    return { root: root, update: update, view: { c: v3(0.3, 0.6, 0), d: 3.6 }, steps: A_STEPS };
   }
   var A_STEPS = [
-    { n: 'A1 กางปากกรวย (กว้างบน แคบล่าง)', a: 'คนที่ 1 ยืนด้านหลัง จับมุมบนของปากกรวยให้อ้าไว้', b: 'ปากกรวยบนกว้าง 0.75 ม. คอแคบ ~0.19 ม. ผ้าอ่อน ปล่อยมือแล้วปากหุบ', d: 6 },
+    { n: 'A1 กางปีกบน (Upper flap) ให้อ้า', a: 'คนที่ 1 ยืนด้านหลัง จับมุมบนของปีกบนสองข้างให้เอนหลังเปิดปากกรวย', b: 'ปีกบนเป็นรูปตัววี กว้างบน 0.75 ม. คอแคบ ~0.19 ม. ผ้าอ่อน ปล่อยมือแล้วปากหุบ', d: 6 },
     { n: 'A2 ตักทรายลงปากกรวย ผ่านคอแคบ', a: 'ทรายลอดคอแคบลงถุงเป็นกองตั้งตรงกลาง', b: 'ด้านข้างของถุง (กว้าง 0.75 ม.) ยังว่าง', d: 12 },
     { n: 'A3 บีบ/ดันทรายออกด้านข้าง แล้วตักเพิ่ม', a: 'คนที่ 2 วางพลั่วแล้วบีบถุงให้ทรายไหลไปด้านข้าง คนที่ 1 จับปากไว้ตลอด', b: 'ทำซ้ำหลายรอบจนเต็มทั้งความกว้าง 0.75 ม.', d: 16 },
-    { n: 'A4 พับปากกรวยลงใต้ถุง ปิดกระสอบ', a: 'ได้ 1 ใบ ทราย ~55 ลิตร หนัก ~89 กก.', b: 'ยกต่อต้องใช้ 2 คน', d: 6 }
+    { n: 'A4 พับปีกบนทับลงหน้าถุง ปิดกระสอบ', a: 'ได้ 1 ใบ ทราย ~55 ลิตร หนัก ~89 กก.', b: 'ยกต่อต้องใช้ 2 คน', d: 6 }
   ];
 
   // ================= B: bunker bag =================
@@ -1475,9 +1489,7 @@ th{background:var(--bg)}
   function ScenarioSizes() {
     var root = newRoot(0, 0);
     var pe = new Person(0xe07b00); place(pe, -2.3, 0.2, 0); pe.bend = 0; pe.crouch = 0; root.add(pe.g); pe.update(root, 0);
-    var wb = new THREE.Group(); var wp = new THREE.Mesh(pillowGeo(0.75, 0.45, 0.2, 3.2), mat(CL.tan)); wb.add(wp);
-    [-1, 1].forEach(function (s) { var w = new THREE.Mesh(new THREE.BoxGeometry(0.375, 0.006, 0.45), mat(CL.tan)); w.position.set(s * 0.5625, 0.003, 0); wb.add(w); });
-    var tl = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.006, 0.3), mat(CL.tan)); tl.position.set(0, 0.003, 0.37); wb.add(tl); root.add(wb);
+    var wb = wingedLying(); root.add(wb);
     var bb = new THREE.Group(); var bp = new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green)); bp.position.x = -0.115; bb.add(bp); var bt = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.012, 0.14), mat(CL.green)); bt.position.set(0.275, 0.006, 0); bb.add(bt); bb.position.set(2.4, 0, 0); root.add(bb);
     var fb = new THREE.Mesh(pillowGeo(0.69, 0.305, 0.14, 3.4), mat(CL.flex)); fb.position.set(4.7, 0, 0); root.add(fb);
     function lab(name, w, x, color, wc) { var s = sprite(name, color, 2.6); s.position.set(x - 0.9, 1.5, 0.3); root.add(s); var s2 = sprite(w, wc, 2.6); s2.position.set(x - 0.9, 1.2, 0.3); root.add(s2); }
@@ -1501,7 +1513,7 @@ th{background:var(--bg)}
   function loadBags(kind) {
     var g = new THREE.Group();
     function add(geo, color, x, y, z, ry) { var m = new THREE.Mesh(geo, mat(color)); m.position.set(x, y, z); m.rotation.y = ry || 0; g.add(m); }
-    if (kind === 'A') { for (var l = 0; l < 2; l++) { add(pillowGeo(0.75, 0.45, 0.2, 3.2), CL.tan, 0, 0.385 + l * 0.2, 0.33, Math.PI / 2); } var w = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.006, 1.5), mat(CL.tan)); w.position.set(0, 0.39, 0.33); g.add(w); }
+    if (kind === 'A') { for (var l = 0; l < 2; l++) { var wbg = wingedLying(); wbg.position.set(0, 0.385 + l * 0.2, 0.33); wbg.rotation.y = Math.PI / 2; wbg.scale.set(0.7, 1, 0.7); g.add(wbg); } }
     else if (kind === 'B') { var layer = 0; [2, 2, 2, 1].forEach(function (n) { for (var k = 0; k < n; k++) add(pillowGeo(0.52, 0.31, 0.13, 3), CL.green, n === 2 ? (k ? 0.15 : -0.15) : 0, 0.385 + layer * 0.13, 0.33, Math.PI / 2); layer++; }); }
     else { for (var l2 = 0; l2 < 2; l2++) for (var k2 = 0; k2 < 2; k2++) add(pillowGeo(0.69, 0.305, 0.14, 3.4), CL.flex, k2 ? 0.16 : -0.16, 0.385 + l2 * 0.14, 0.33, Math.PI / 2); }
     return g;
@@ -1537,7 +1549,7 @@ th{background:var(--bg)}
     var ramp = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 8.4, bevelEnabled: false }), mat(0x9bb06f)); ramp.position.z = -4.2; root.add(ramp);
     var lanes = [{ k: 'A', z: -2.5, t: 'A มีปีก ~89 กก. ต้อง 2 คนต่อใบ' }, { k: 'B', z: 0.1, t: 'B บังเกอร์ ~26 กก. 1 คนต่อใบ' }, { k: 'C', z: 2.7, t: 'C Flex ~51 กก. (ทรายล้วน) 1-2 คน' }], items = [];
     function bagMesh(k) {
-      if (k === 'A') return new THREE.Mesh(pillowGeo(0.75, 0.45, 0.2, 3.2), mat(CL.tan));
+      if (k === 'A') { var wg = wingedLying(); wg.scale.set(0.75, 1, 0.75); return wg; }
       if (k === 'B') return new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green));
       return new THREE.Mesh(pillowGeo(0.69, 0.305, 0.14, 3.4), mat(CL.flex));
     }
@@ -1638,7 +1650,7 @@ th{background:var(--bg)}
   loadingEl.hidden = true;
   select('a');
   requestAnimationFrame(frame);
-  window.__bag = { select: select, state: function () { return { T: T, total: total, tab: curTab && curTab.id }; }, setT: function (x) { T = x; playing = false; }, view: view, draw: draw };
+  window.__bag = { select: select, state: function () { return { T: T, total: total, tab: curTab && curTab.id }; }, setT: function (x) { T = x; playing = false; }, view: view, draw: draw, cam: function (a, b, c, x, y, z) { camera.position.set(a, b, c); controls.target.set(x, y, z); controls.update(); } };
 })();
 </script>
 </body>
