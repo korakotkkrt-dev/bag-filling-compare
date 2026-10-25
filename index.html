@@ -1277,27 +1277,28 @@ th{background:var(--bg)}
     var root = newRoot(ox, oz), tan = mat(CL.tan), shellMat = mat(0xf5efe0, { transparent: true, opacity: 0.35, depthWrite: false });
     // real drawing (flapped soilbag detail): sheet 1.50 x 0.75 m, side flaps 0.35 m each, seams 2.5 cm,
     // soil filling part 0.75 x 0.45 m at the bottom centre, upper flap = V-shaped region above it
-    var pocket = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.45, 1), shellMat); pocket.position.y = 0.225; root.add(pocket);
+    var bag = new THREE.Group(); root.add(bag);
+    var pocket = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.45, 1), shellMat); pocket.position.y = 0.225; bag.add(pocket);
     var edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.75, 0.45, 1)), new THREE.LineBasicMaterial({ color: 0x8a6b30 })); pocket.add(edges);
     var seamMat = mat(0x6b5428);
     [-1, 1].forEach(function (s) {
-      var w = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.75, 0.012), tan); w.position.set(s * 0.5625, 0.375, 0); root.add(w);
-      var sm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.75, 0.016), seamMat); sm.position.set(s * 0.375, 0.375, 0); root.add(sm);
+      var w = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.75, 0.012), tan); w.position.set(s * 0.5625, 0.375, 0); bag.add(w);
+      var sm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.75, 0.016), seamMat); sm.position.set(s * 0.375, 0.375, 0); bag.add(sm);
       var sh = new THREE.Shape(); sh.moveTo(s * 0.375, 0.75); sh.lineTo(s * 0.375, 0.45); sh.lineTo(s * 0.095, 0.45); sh.lineTo(s * 0.375, 0.75);
-      root.add(new THREE.Mesh(new THREE.ShapeGeometry(sh), tan));
+      bag.add(new THREE.Mesh(new THREE.ShapeGeometry(sh), tan));
     });
     var fl = [[-0.375, 0.75, 0], [-0.095, 0.45, 0], [0.375, 0.75, 0], [0.095, 0.45, 0], [-0.375, 0.45, 0], [0.375, 0.45, 0]];
     var foldGeo = new THREE.BufferGeometry().setFromPoints(fl.map(function (q) { return v3(q[0], q[1], 0.01); }));
-    var fold = new THREE.LineSegments(foldGeo, new THREE.LineDashedMaterial({ color: 0x3a2c10, dashSize: 0.03, gapSize: 0.02 })); fold.computeLineDistances(); root.add(fold);
+    var fold = new THREE.LineSegments(foldGeo, new THREE.LineDashedMaterial({ color: 0x3a2c10, dashSize: 0.03, gapSize: 0.02 })); fold.computeLineDistances(); bag.add(fold);
     // upper flap (V region): pivots on the soil-part top edge
-    var flap = new THREE.Group(); flap.position.y = 0.45; root.add(flap);
+    var flap = new THREE.Group(); flap.position.y = 0.45; bag.add(flap);
     var fs = new THREE.Shape(); fs.moveTo(-0.095, 0); fs.lineTo(0.095, 0); fs.lineTo(0.375, 0.3); fs.lineTo(-0.375, 0.3); fs.lineTo(-0.095, 0);
     flap.add(new THREE.Mesh(new THREE.ShapeGeometry(fs), mat(CL.tanl, { transparent: true, opacity: 0.8 })));
     flap.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.ShapeGeometry(fs)), new THREE.LineBasicMaterial({ color: 0x8a6b30 })));
     function flapCorner(side, ang) { return v3(side * 0.375, 0.45 + 0.3 * Math.cos(ang), 0.3 * Math.sin(ang)); }
     // sand height-field
     var sg = new THREE.BoxGeometry(0.72, 1, 1, 24, 1, 1), sbase = sg.attributes.position.array.slice();
-    var sand = new THREE.Mesh(sg, mat(CL.sand, { flatShading: true })); root.add(sand);
+    var sand = new THREE.Mesh(sg, mat(CL.sand, { flatShading: true })); bag.add(sand);
     function setSand(fill, spread, thick) {
       var pa = sg.attributes.position.array;
       for (var i = 0; i < pa.length; i += 3) {
@@ -1319,47 +1320,46 @@ th{background:var(--bg)}
     var mouthGrip = v3(1.12, 0.9, 0), mouthTip = v3(0.16, 0.98, 0);
     var rimL = v3(-0.375, 0.76, 0), rimR = v3(0.375, 0.76, 0);
 
-    var state = { fill: 0, spread: 0, thick: 0.02 };
     function update(si, u, t) {
-      var ang = -0.6, pressing = 0, cyc = null, fill = 0, spread = 0;
-      if (si === 0) { ang = -0.6 * ease(u); fill = 0; }
+      var ang = -0.6, cyc = null, fill = 0, spread = 0, s = 0, pressing = false;
+      if (si === 0) { ang = -0.6 * ease(u); }
       else if (si === 1) { fill = 0.45 * u; spread = 0.15 * u; cyc = (u * 3) % 1; }
-      else if (si === 2) { fill = 0.45 + 0.5 * u; spread = 0.15 + 0.85 * ease(u); cyc = (u * 4) % 1; pressing = Math.sin(u * Math.PI * 8) > 0 ? 1 : 0; }
-      else { fill = 0.95 + 0.05 * u; spread = 1; ang = lerp(-0.6, 2.9, ease(u)); }
-      flap.rotation.x = ang; flap.position.z = ang > 1 ? pocket.scale.z / 2 : 0;
-      var thick = 0.02 + 0.13 * Math.min(1, fill / 0.95); pocket.scale.z = thick;
-      setSand(fill, spread, thick * 0.8);
-      // P1 holds the two top corners of the upper flap
+      else {
+        fill = 0.45 + 0.52 * u; spread = 0.15 + 0.85 * ease(u);
+        var cp = (u * 4) % 1;
+        if (cp < 0.5) { pressing = true; s = 0.5 - 0.5 * Math.cos(cp / 0.5 * 4 * Math.PI); } else { cyc = (cp - 0.5) / 0.5; }
+      }
+      // the bag is pushed, squeezed and shaken when P2 kneads it; P1 holds the top corners so the bag sways between the hands
+      bag.rotation.set(0.04 * Math.sin(t * 22) * s, 0, 0.16 * s); bag.position.set(-0.08 * s, 0.025 * Math.sin(t * 22) * s, 0); bag.scale.set(1 - 0.07 * s, 1 + 0.03 * s, 1); bag.updateMatrix();
+      flap.rotation.x = ang;
+      var thick = 0.02 + 0.13 * Math.min(1, fill / 0.97); pocket.scale.z = thick * (1 + 0.18 * s);
+      setSand(fill, spread, thick * 0.8 * (1 + 0.18 * s));
       var rl = flapCorner(-1, ang), rr = flapCorner(1, ang);
       if (si === 0) { rl = lerpV(v3(-0.3, 0.55, -0.45), rl, ease(u)); rr = lerpV(v3(0.3, 0.55, -0.45), rr, ease(u)); }
-      p1.bend = 0.25; p1.hands = [rl, rr]; p1.update(root, t);
-      // P2
+      else { rl.applyMatrix4(bag.matrix); rr.applyMatrix4(bag.matrix); }
+      p1.bend = 0.25 + 0.1 * s; p1.hands = [rl, rr]; p1.update(root, t);
       stream.visible = false;
       var topY = 0.45 * Math.max(0.1, fill) + 0.04;
       if (si === 0) {
         var k0 = ease(u); var g0 = lerpV(v3(1.15, 0.7, 0.5), mouthGrip, k0), t0 = lerpV(v3(1.0, 0.2, 0.7), mouthTip.clone().add(v3(0.1, -0.1, 0)), k0);
-        shovel.set(g0, t0, 0.8); p2.hands = [g0, g0.clone().lerp(t0, 0.38)]; p2.bend = 0.3;
-      } else if (si === 3) {
-        shovel.g.visible = false; p2.hands = [v3(0.2, 0.55, 0.1), v3(0.375, 0.5, 0)]; p2.bend = 0.35;
-      } else if (si === 2 && pressing) {
-        shovel.g.visible = false; var sq = 0.5 + 0.5 * Math.sin(u * 60);
-        p2.hands = [v3(0.33 - 0.07 * sq, 0.36, 0.12), v3(0.375 - 0.05 * sq, 0.27, -0.12)]; p2.bend = 0.5; p2.crouch = 0.2;
+        shovel.set(g0, t0, 0.8); p2.hands = [g0, g0.clone().lerp(t0, 0.38)]; p2.bend = 0.3; p2.crouch = 0.05;
+      } else if (pressing) {
+        shovel.g.visible = false;
+        p2.hands = [v3(lerp(0.52, 0.32, s), 0.36, 0.12).applyMatrix4(bag.matrix), v3(lerp(0.55, 0.36, s), 0.27, -0.12).applyMatrix4(bag.matrix)];
+        p2.bend = 0.5; p2.crouch = 0.2;
       } else {
         shovel.g.visible = true; p2.crouch = 0.1; p2.bend = 0.35;
         var c = shovelCycle(cyc, pl, mouthGrip, mouthTip); shovel.set(c.grip, c.tip, c.load); p2.hands = [c.grip, c.grip.clone().lerp(c.tip, 0.38)];
-        if (c.pour) { stream.visible = true; setLimb(stream, c.tip.clone().add(v3(0, 0, 0)), v3(0, Math.max(topY, 0.3), 0)); }
+        if (c.pour) { stream.visible = true; setLimb(stream, c.tip.clone(), v3(0, Math.max(topY, 0.3), 0)); }
       }
-      if (si !== 2) { p2.crouch = 0.05; }
       p2.update(root, t);
-      
     }
     return { root: root, update: update, view: { c: v3(0.3, 0.6, 0), d: 3.6 }, steps: A_STEPS };
   }
   var A_STEPS = [
     { n: 'A1 กางปีกบน (Upper flap) ให้อ้า', a: 'คนที่ 1 ยืนด้านหลัง จับมุมบนของปีกบนสองข้างให้เอนหลังเปิดปากกรวย', b: 'ปีกบนเป็นรูปตัววี กว้างบน 0.75 ม. คอแคบ ~0.19 ม. ผ้าอ่อน ปล่อยมือแล้วปากหุบ', d: 6 },
     { n: 'A2 ตักทรายลงปากกรวย ผ่านคอแคบ', a: 'ทรายลอดคอแคบลงถุงเป็นกองตั้งตรงกลาง', b: 'ด้านข้างของถุง (กว้าง 0.75 ม.) ยังว่าง', d: 12 },
-    { n: 'A3 บีบ/ดันทรายออกด้านข้าง แล้วตักเพิ่ม', a: 'คนที่ 2 วางพลั่วแล้วบีบถุงให้ทรายไหลไปด้านข้าง คนที่ 1 จับปากไว้ตลอด', b: 'ทำซ้ำหลายรอบจนเต็มทั้งความกว้าง 0.75 ม.', d: 16 },
-    { n: 'A4 พับปีกบนทับลงหน้าถุง ปิดกระสอบ', a: 'ได้ 1 ใบ ทราย ~55 ลิตร หนัก ~89 กก.', b: 'ยกต่อต้องใช้ 2 คน', d: 6 }
+    { n: 'A3 ขย้ำถุงให้ทรายไหลลงข้างๆ แล้วตักเพิ่ม', a: 'คนที่ 2 วางพลั่วแล้วขย้ำถุงให้ทรายไหลไปด้านข้าง ถุงขยับตามแรงบีบ คนที่ 1 จับปากไว้ตลอด', b: 'ทำซ้ำจนเต็มความกว้าง 0.75 ม. ได้ 1 ใบ ทราย ~55 ลิตร หนัก ~89 กก. ยกต่อต้องใช้ 2 คน', d: 18 }
   ];
 
   // ================= B: bunker bag =================
@@ -1483,7 +1483,7 @@ th{background:var(--bg)}
     ];
     function update(si, u, t) {
       // sub-scenarios use their own step lengths, map this step index/u onto theirs
-      a.update(si, u, t); b.update(si, u, t); c.update(si, u, t);
+      a.update(Math.min(si, 2), si > 2 ? 1 : u, t); b.update(si, u, t); c.update(si, u, t);
     }
     return { root: root, update: update, view: { c: v3(-0.2, 0.9, 0), d: 10 }, steps: steps };
   }
