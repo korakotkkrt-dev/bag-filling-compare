@@ -64,7 +64,7 @@
   // winged bag lying on the ground (real drawing): pillow over the soil part, flat sheet 1.50 x 0.75, V-shaped upper flap at the back
   function wingedLying() {
     var g = new THREE.Group(), tan = mat(CL.tan);
-    var body = new THREE.Mesh(pillowGeo(0.75, 0.45, 0.2, 3.2), tan); body.position.y = 0.006; g.add(body);
+    var body = new THREE.Mesh(pillowGeo(0.75, 0.45, 0.15, 3.2), tan); body.position.y = 0.006; g.add(body);
     var sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.006, 0.75), tan); sheet.position.set(0, 0.003, 0.15); g.add(sheet);
     var shp = new THREE.Shape(); shp.moveTo(-0.095, 0); shp.lineTo(0.095, 0); shp.lineTo(0.375, 0.3); shp.lineTo(-0.375, 0.3); shp.lineTo(-0.095, 0);
     var fl = new THREE.Mesh(new THREE.ShapeGeometry(shp), mat(CL.tanl)); fl.rotation.x = Math.PI / 2; fl.position.set(0, 0.008, 0.225); g.add(fl);
@@ -202,7 +202,7 @@
       else if (si === 2) { fill = 0.45 + 0.5 * u; spread = 0.15 + 0.85 * ease(u); cyc = (u * 4) % 1; pressing = Math.sin(u * Math.PI * 8) > 0 ? 1 : 0; }
       else { fill = 0.95 + 0.05 * u; spread = 1; ang = lerp(-0.6, 2.9, ease(u)); }
       flap.rotation.x = ang; flap.position.z = ang > 1 ? pocket.scale.z / 2 : 0;
-      var thick = 0.02 + 0.18 * Math.min(1, fill / 0.95); pocket.scale.z = thick;
+      var thick = 0.02 + 0.13 * Math.min(1, fill / 0.95); pocket.scale.z = thick;
       setSand(fill, spread, thick * 0.8);
       // P1 holds the two top corners of the upper flap
       var rl = flapCorner(-1, ang), rr = flapCorner(1, ang);
@@ -340,7 +340,7 @@
     { n: 'C1 วางแม่แบบ (jig) แขวนถุงเปล่า', a: 'แม่แบบมีช่องเท่าปากถุง (ในคลิป 18 ช่อง)', b: 'ทุกถุงแขวนปากเปิดพร้อมกรอก', d: 6 },
     { n: 'C2 รถตักเทดิน/ทรายลงบนแม่แบบ', a: 'เทกองเดียวลงหลายช่องพร้อมกัน', b: 'ในคลิป ทำได้ถึง 600 ใบต่อวัน', d: 10 },
     { n: 'C3 กวาดเข้าช่อง กรอกเต็มปากถุง', a: 'กรอกเต็มปากแล้วกระทุ้งให้ทรายแน่นทุกใบ', b: 'ปริมาตรเท่ากัน ขั้นต่ำ 32 ลิตร', d: 12 },
-    { n: 'C4 ผูกปาก เรียงบนพาเลต', a: 'ใบละ ~32 กก. (ดินผสม) หรือ ~51 กก. (ทรายล้วน)', b: 'พาเลตละ 42 ใบ ขนด้วยรถ', d: 8 }
+    { n: 'C4 ผูกปาก เรียงบนพาเลต', a: 'ใบละ ~51 กก. (ทรายแห้ง)', b: 'พาเลตละ 42 ใบ ขนด้วยรถ', d: 8 }
   ];
 
   // ================= compare (all three) =================
@@ -354,7 +354,7 @@
       { n: 'ขั้นที่ 1 เตรียมกระสอบ/ปาก', a: 'มีปีก: ปากกรวยผ้าอ่อน ต้องมีคนจับ | บังเกอร์: ปากกว้างกางค้างได้ | Flex: แขวนในแม่แบบ', b: 'ภาพจำลองไม่ใช่เวลาจริง ทั้งสามแบบเดินตามขั้นเดียวกัน', d: 6 },
       { n: 'ขั้นที่ 2 ตักทรายลง', a: 'มีปีก: ทรายผ่านคอแคบ กองกลาง | บังเกอร์: ลงเต็มหน้าตัด | Flex: เทกองเดียวลงหลายช่อง', b: 'รูปทรงปากกำหนดว่าทรายกระจายเองหรือต้องดัน', d: 11 },
       { n: 'ขั้นที่ 3 ทำให้เต็มทั่วถุง', a: 'มีปีก: ต้องบีบ/ดันทรายออกข้าง ใช้ 2 คน | บังเกอร์: กรอก 2/3 | Flex: กวาดเข้าช่อง กระทุ้ง', b: 'กระสอบมีปีกเป็นขั้นที่ใช้แรงและเวลามากที่สุด', d: 14 },
-      { n: 'ขั้นที่ 4 ปิดปากกระสอบ', a: 'มีปีก ~89 กก. ยก 2 คน | บังเกอร์ ~26 กก. ยก 1 คน | Flex ~32-51 กก. 2 คน', b: 'น้ำหนักและความสม่ำเสมอของขนาดต่างกันชัดเจน', d: 7 }
+      { n: 'ขั้นที่ 4 ปิดปากกระสอบ', a: 'มีปีก ~89 กก. ยก 2 คน | บังเกอร์ ~18-26 กก. ยก 1 คน | Flex ~51 กก. ยก 2 คน', b: 'น้ำหนักและความสม่ำเสมอของขนาดต่างกันชัดเจน', d: 7 }
     ];
     function update(si, u, t) {
       // sub-scenarios use their own step lengths, map this step index/u onto theirs
@@ -373,7 +373,7 @@
     function lab(name, w, x, color, wc) { var s = sprite(name, color, 2.6); s.position.set(x - 0.9, 1.5, 0.3); root.add(s); var s2 = sprite(w, wc, 2.6); s2.position.set(x - 0.9, 1.2, 0.3); root.add(s2); }
     lab('กระสอบมีปีก (GGS)', 'ทราย ~55 ลิตร · ~89 กก.', 0, '#8a5a14', '#cc0000');
     lab('กระสอบบังเกอร์', 'ทราย ~11–17 ลิตร · ~18–26 กก.', 2.4, '#2f4f25', '#008800');
-    lab('Flex MSE', 'ทราย 32 ลิตร · ~51 กก. (ทรายล้วน)', 4.7, '#444', '#cc6600');
+    lab('Flex MSE', 'ทราย ≥32 ลิตร · ~51 กก.', 4.7, '#444', '#cc6600');
     var sizes = { n: 'ขนาดหลังกรอก เทียบกับคนสูง 1.70 ม.', a: 'กระสอบมีปีกใหญ่ที่สุด ผ้าแบนก่อนกรอก 1.50 x 0.75 ม. ส่วนบรรจุ 0.75 x 0.45 ม.', b: 'ขนาดหลังกรอกเป็นค่าประมาณจากแบบ ป้ายสินค้า และคลิป ไม่ใช่การวัดจริง', d: 10 };
     function update() { }
     return { root: root, update: update, view: { c: v3(1.3, 0.8, 0), d: 5.6 }, steps: [sizes], still: true };
@@ -397,7 +397,7 @@
     return g;
   }
   function ScenarioBarrow() {
-    var root = newRoot(0, 0), lanes = [{ k: 'A', z: -2.6, c: 0x2e8b57, t: 'A กระสอบมีปีก 2 ใบ ~178 กก.' }, { k: 'B', z: 0, c: 0x2e8b57, t: 'B กระสอบบังเกอร์ 7 ใบ ~182 กก.' }, { k: 'C', z: 2.6, c: 0x2e8b57, t: 'C Flex MSE 4 ใบ ~204 กก. (ทรายล้วน)' }], items = [];
+    var root = newRoot(0, 0), lanes = [{ k: 'A', z: -2.6, c: 0x2e8b57, t: 'A กระสอบมีปีก 2 ใบ ~178 กก.' }, { k: 'B', z: 0, c: 0x2e8b57, t: 'B กระสอบบังเกอร์ 7 ใบ ~182 กก.' }, { k: 'C', z: 2.6, c: 0x2e8b57, t: 'C Flex MSE 4 ใบ ~204 กก.' }], items = [];
     lanes.forEach(function (ln) {
       var p = new Person(ln.c), bw = barrow(), ld = loadBags(ln.k); bw.add(ld); var grp = new THREE.Group(); grp.add(bw); root.add(grp, p.g);
       var s = sprite(ln.t, '#222', 3.4); s.position.set(-4.6, ln.k === 'A' ? 2.75 : ln.k === 'B' ? 2.2 : 1.65, ln.z); root.add(s);
@@ -425,7 +425,7 @@
     var root = newRoot(0, 0), ang = 25 * Math.PI / 180, run = 11, h = run * Math.tan(ang);
     var shape = new THREE.Shape(); shape.moveTo(-1, 0); shape.lineTo(run, 0); shape.lineTo(run, h); shape.lineTo(-1, 0);
     var ramp = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 8.4, bevelEnabled: false }), mat(0x9bb06f)); ramp.position.z = -4.2; root.add(ramp);
-    var lanes = [{ k: 'A', z: -2.5, t: 'A มีปีก ~89 กก. ต้อง 2 คนต่อใบ' }, { k: 'B', z: 0.1, t: 'B บังเกอร์ ~26 กก. 1 คนต่อใบ' }, { k: 'C', z: 2.7, t: 'C Flex ~51 กก. (ทรายล้วน) 1-2 คน' }], items = [];
+    var lanes = [{ k: 'A', z: -2.5, t: 'A มีปีก ~89 กก. ต้อง 2 คนต่อใบ' }, { k: 'B', z: 0.1, t: 'B บังเกอร์ ~26 กก. 1 คนต่อใบ' }, { k: 'C', z: 2.7, t: 'C Flex ~51 กก. 1-2 คน' }], items = [];
     function bagMesh(k) {
       if (k === 'A') { var wg = wingedLying(); wg.scale.set(0.75, 1, 0.75); return wg; }
       if (k === 'B') return new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green));
