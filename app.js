@@ -588,6 +588,18 @@
 
   // ================= N: proposed new bag (bunker-bag size + side wings + long tie tail overlapped by the next bag) =================
   var NEW = { L: 0.58, W: 0.31, T: 0.13, tail: 0.34, wing: 0.20 };
+  // small kangaroo-style soil pocket (sewn on the front long side) holding a creeper such as golden button
+  function pouchKangaroo() {
+    var g = new THREE.Group();
+    g.add(new THREE.Mesh(pillowGeo2(0.20, 0.13, 0.075, { n: 2.4, lump: 0.003, seed: 3, nu: 20, nv: 12 }), fabricMat('bunker', 2, 1.5)));
+    var soil = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x5a4332, { flatShading: true })); soil.scale.set(0.085, 0.03, 0.05); soil.position.y = 0.062; g.add(soil);
+    for (var i = 0; i < 8; i++) {
+      var lf = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.075, 5), mat(0x58a948)), a = i / 8 * 6.28;
+      lf.position.set(Math.cos(a) * 0.05, 0.1, Math.sin(a) * 0.03); lf.rotation.set(Math.sin(a) * 0.8, 0, -Math.cos(a) * 0.8); g.add(lf);
+    }
+    var vine = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.15, 5), mat(0x3f8d3a)); vine.position.set(0.02, 0.06, 0.085); vine.rotation.x = 1.1; g.add(vine);
+    return g;
+  }
   function newBagLying() {
     var g = new THREE.Group(), L = NEW.L, ox = -0.04;
     var body = new THREE.Mesh(pillowGeo2(L, NEW.W, NEW.T, { n: 2.6, taper: 0.1, lump: 0.005, seed: 5, neck: 0.22 }), fabricMat('bunker', 7, 4)); body.position.set(ox, 0.002, 0); g.add(body);
@@ -597,10 +609,11 @@
     var tail = new THREE.Mesh(new THREE.BoxGeometry(NEW.tail, 0.008, 0.15), fabricMat('bunker', 2, 1)); tail.position.set(ox + L / 2 + NEW.tail / 2 - 0.02, 0.004, 0); g.add(tail);
     // side wings along both long edges (reinforcement / anchoring strips)
     var wingMat = fabricMat('bunker', 3, 1, { color: new THREE.Color(2.1, 2.25, 1.8) });
-    [-1, 1].forEach(function (s) {
+    [-1].forEach(function (s) {
       var w = new THREE.Mesh(new THREE.BoxGeometry(L * 0.96, 0.005, NEW.wing), wingMat); w.position.set(ox - 0.01, 0.0035, s * (NEW.W / 2 * 0.92 + NEW.wing / 2 - 0.01)); g.add(w);
       g.add(dashedLine([[ox - L / 2 * 0.95, 0.007, s * NEW.W / 2 * 0.9], [ox + L / 2 * 0.95, 0.007, s * NEW.W / 2 * 0.9]], 0xf2f2f2));
     });
+    [-0.14, 0.14].forEach(function (dx) { var pk = pouchKangaroo(); pk.position.set(ox + dx, 0, NEW.W / 2 + 0.045); g.add(pk); });
     var seam = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.004, 0.26), mat(0x232c1f)); seam.position.set(ox - L / 2 * 0.94, 0.012, 0); g.add(seam);
     return g;
   }
@@ -611,7 +624,8 @@
     var cap = new THREE.Mesh(new THREE.CircleGeometry(1, 36), shellFabric('bunker', 3, 3)); cap.rotation.x = -Math.PI / 2; cap.position.y = 0.002; root.add(cap);
     var rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 8, 48), mat(0x3d4f35)); rim.rotation.x = -Math.PI / 2; rim.position.y = H; root.add(rim);
     var wingMat = shellFabric('bunker', 2, 3, { color: new THREE.Color(2.1, 2.25, 1.8) }), wings = [];
-    [-1, 1].forEach(function (s) { var pv = new THREE.Group(), w = new THREE.Mesh(new THREE.BoxGeometry(NEW.wing, 0.75, 0.006), wingMat); w.position.x = s * NEW.wing / 2; pv.add(w); pv.rotation.y = s * 1.0; wings.push({ m: pv, s: s }); root.add(pv); });
+    [1].forEach(function (s) { var pv = new THREE.Group(), w = new THREE.Mesh(new THREE.BoxGeometry(NEW.wing, 0.75, 0.006), wingMat); w.position.x = s * NEW.wing / 2; pv.add(w); pv.rotation.y = s * 1.0; wings.push({ m: pv, s: s }); root.add(pv); });
+    var pouchesUp = new THREE.Group(); [-0.085, 0.085].forEach(function (dx) { var pk = pouchKangaroo(); pk.rotation.x = Math.PI / 2; pk.position.set(dx, 0.2, 0); pouchesUp.add(pk); }); root.add(pouchesUp);
     var sand = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 20), mat(CL.sand)); root.add(sand);
     var lying = newBagLying(); lying.rotation.y = Math.PI / 2; root.add(lying);
     // wall of overlapped bags (2 courses x 4): each bag lies on the tail of the previous one
@@ -631,6 +645,7 @@
       var rx = lerp(0.175, 0.155, open), ry = lerp(0.012, 0.10, open), upright = si < 3 && lay < 0.5;
       col.scale.set(rx, 1, ry); cap.scale.set(rx, ry, 1); rim.scale.set(rx, ry, 1); col.visible = cap.visible = rim.visible = upright;
       wings.forEach(function (w) { w.m.visible = upright; w.m.position.set(w.s * rx, 0.375, 0); });
+      pouchesUp.visible = upright; pouchesUp.position.z = ry * 0.9;
       sand.visible = level > 0.005 && upright; sand.scale.set(rx * 0.93, Math.max(0.001, level), ry * 0.9); sand.position.y = level / 2;
       lying.visible = si === 2 && lay >= 0.5; wall.visible = si === 3; pile_.visible = si < 3;
       stream.visible = false;
@@ -667,10 +682,10 @@
     return { root: root, update: update, view: { c: v3(0.0, 0.65, 0), d: 5.2 }, steps: N_STEPS, stepView: function (si) { return si < 3 ? { pos: [0.9, 1.0, 3.3], tgt: [0.1, 0.55, 0] } : { pos: [1.3, 1.7, 3.2], tgt: [0, 0.1, 0] }; } };
   }
   var N_STEPS = [
-    { n: 'N1 ตั้งถุง ปากกว้างเท่ากระสอบบังเกอร์', a: 'ถุงมีปีกสองข้างตามแนวตะเข็บยาว ตั้งกรอกแบบเดียวกับกระสอบบังเกอร์ ปากกว้างกางค้างได้', b: 'ผ้าส่วนปากยาวกว่าเดิม เผื่อไว้ใช้เป็นหางมัดปาก', d: 6 },
+    { n: 'N1 ตั้งถุง ปากกว้างเท่ากระสอบบังเกอร์', a: 'ถุงมีปีกด้านหลังด้านเดียว และกระเป๋าเล็ก 2 ใบด้านหน้า ตั้งกรอกแบบเดียวกับกระสอบบังเกอร์ ปากกว้างกางค้างได้', b: 'ผ้าส่วนปากยาวกว่าเดิม เผื่อไว้ใช้เป็นหางมัดปาก', d: 6 },
     { n: 'N2 กรอกทรายประมาณครึ่งถุง', a: 'ตักทรายลงปากกว้างโดยตรง ไม่ต้องดันทรายออกข้าง กรอกประมาณครึ่งถุงเหมือนกระสอบกันน้ำท่วม', b: 'ทรายต่อใบเท่ากระสอบบังเกอร์ ~11–17 ลิตร หนัก ~15–24 กก.', d: 11 },
     { n: 'N3 รวบปากมัดเชือก เหลือหางยาว', a: 'รวบคอถุงมัดด้วยเชือก ส่วนผ้าที่เหลือเป็นหางยาวประมาณ 0.30–0.35 ม.', b: 'วางถุงนอนให้หางยื่นไปด้านท้าย', d: 8 },
-    { n: 'N4 วางถุงใบถัดไปทับหาง วางสลับชั้น', a: 'ใบถัดไปวางทับหางของใบก่อนหน้า น้ำหนักถุงกดหางไม่ให้ดึงหลุด ปีกข้างวางราบรองใต้ชั้นถัดไปช่วยยึดและเสริมแรง', b: 'ภาพจำลองแนวคิด ยังไม่ได้ทดสอบกำลังยึดและการเสริมแรง ต้องตรวจกับวิศวกรผู้ออกแบบ', d: 16 }
+    { n: 'N4 วางถุงใบถัดไปทับหาง วางสลับชั้น', a: 'ใบถัดไปวางทับหางของใบก่อนหน้า น้ำหนักถุงกดหางไม่ให้ดึงหลุด ปีกด้านหลังวางราบรองใต้ชั้นถัดไปช่วยยึดและเสริมแรง', b: 'กระเป๋า 2 ใบด้านหน้ากรอกดินปลูกไม้เลื้อย (เช่น กระดุมทอง) ให้คลุมกระสอบหลังก่อสร้าง ภาพจำลองแนวคิด ยังไม่ได้ทดสอบกำลังยึดและการเสริมแรง', d: 16 }
   ];
 
   // ---------- renderer / app ----------
