@@ -61,16 +61,132 @@
     return g;
   }
 
-  // winged bag lying on the ground (real drawing): pillow over the soil part, flat sheet 1.50 x 0.75, V-shaped upper flap at the back
-  function wingedLying() {
-    var g = new THREE.Group(), tan = mat(CL.tan);
-    var body = new THREE.Mesh(pillowGeo(0.75, 0.45, 0.15, 3.2), tan); body.position.y = 0.006; g.add(body);
-    var sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.006, 0.75), tan); sheet.position.set(0, 0.003, 0.15); g.add(sheet);
-    var shp = new THREE.Shape(); shp.moveTo(-0.095, 0); shp.lineTo(0.095, 0); shp.lineTo(0.375, 0.3); shp.lineTo(-0.375, 0.3); shp.lineTo(-0.095, 0);
-    var fl = new THREE.Mesh(new THREE.ShapeGeometry(shp), mat(CL.tanl)); fl.rotation.x = Math.PI / 2; fl.position.set(0, 0.008, 0.225); g.add(fl);
-    [-1, 1].forEach(function (s) { var sm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.008, 0.75), mat(0x6b5428)); sm.position.set(s * 0.375, 0.004, 0.15); g.add(sm); });
+  // ===== realistic bag fabrics and geometry (inserted into app.js) =====
+  var XR = { on: false, mats: [] };      // x-ray toggle: shells become see-through to show the sand inside
+  function setXray(on) {
+    XR.on = on;
+    XR.mats.forEach(function (m) { m.transparent = on; m.opacity = on ? 0.38 : 1; m.depthWrite = !on; m.needsUpdate = true; });
+  }
+  function shade(hex, k) {
+    var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    function c(v) { return Math.max(0, Math.min(255, Math.round(v * k))); }
+    return 'rgb(' + c(r) + ',' + c(g) + ',' + c(b) + ')';
+  }
+  function imgTex(img, rx, ry) {
+    var t = new THREE.Texture(img); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx || 1, ry || 1); t.anisotropy = 4;
+    if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+    if (img.complete && img.naturalWidth) t.needsUpdate = true; else img.addEventListener('load', function () { t.needsUpdate = true; });
+    return t;
+  }
+  function canvasOf(draw, size) { var c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size); return c; }
+  var ggsImg = new Image(); ggsImg.src = TEX_GGS;
+  var logoImg = new Image(); logoImg.src = TEX_LOGO;
+  var wovenGreen = canvasOf(function (x, s) {
+    x.fillStyle = '#5c6e4c'; x.fillRect(0, 0, s, s); var tp = s / 24, i, j;
+    for (i = 0; i < 24; i++) for (j = 0; j < 24; j++) {
+      var over = (i + j) % 2 === 0, k = 0.78 + Math.random() * 0.34; x.fillStyle = shade(over ? '#6a7e57' : '#4a5a3d', k);
+      if (over) x.fillRect(i * tp + 0.4, j * tp, tp - 0.8, tp); else x.fillRect(i * tp, j * tp + 0.4, tp, tp - 0.8);
+    }
+    for (i = 0; i < 900; i++) { x.fillStyle = 'rgba(' + (90 + Math.random() * 60 | 0) + ',' + (84 + Math.random() * 50 | 0) + ',60,' + (Math.random() * 0.16) + ')'; x.fillRect(Math.random() * s, Math.random() * s, 2 + Math.random() * 4, 2 + Math.random() * 4); }
+  }, 256);
+  var feltDark = canvasOf(function (x, s) {
+    x.fillStyle = '#4a4844'; x.fillRect(0, 0, s, s); var i;
+    for (i = 0; i < 7000; i++) { var v = 40 + Math.random() * 40 | 0; x.strokeStyle = 'rgba(' + v + ',' + v + ',' + (v - 2) + ',0.45)'; x.lineWidth = 0.7; x.beginPath(); var px = Math.random() * s, py = Math.random() * s, a = Math.random() * 6.28; x.moveTo(px, py); x.lineTo(px + Math.cos(a) * 5, py + Math.sin(a) * 5); x.stroke(); }
+    for (i = 0; i < 500; i++) { x.fillStyle = 'rgba(120,112,98,' + (Math.random() * 0.12) + ')'; x.fillRect(Math.random() * s, Math.random() * s, 3, 3); }
+  }, 256);
+  function fabricMap(kind, rx, ry) {
+    if (kind === 'ggs') return imgTex(ggsImg, rx, ry);
+    var t = new THREE.CanvasTexture(kind === 'bunker' ? wovenGreen : feltDark); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4;
+    if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+    return t;
+  }
+  var FABRIC = { ggs: { rough: 0.9, bump: 0.6, gain: 2.6 }, bunker: { rough: 0.6, bump: 0.25, gain: 1.7 }, flex: { rough: 1.0, bump: 0.35, gain: 2.6 } };
+  function fabricMat(kind, rx, ry, extra) {
+    var f = FABRIC[kind];
+    return new THREE.MeshStandardMaterial(Object.assign({ map: fabricMap(kind, rx, ry), bumpMap: fabricMap(kind, rx, ry), bumpScale: f.bump, color: new THREE.Color(f.gain, f.gain, f.gain), roughness: f.rough, metalness: 0, side: THREE.DoubleSide }, extra || {}));
+  }
+  function shellFabric(kind, rx, ry, extra) { var m = fabricMat(kind, rx, ry, extra); XR.mats.push(m); if (XR.on) { m.transparent = true; m.opacity = 0.38; m.depthWrite = false; } return m; }
+
+  // pillow lying on the ground; u along length (x), v across (z). opts: n, taper (narrower ends), lump (mm-scale bumps), seed, neck (fraction of the +x end gathered)
+  function pillowGeo2(L, W, T, o) {
+    o = o || {};
+    var n = o.n || 3, nu = o.nu || 44, nv = o.nv || 24, taper = o.taper || 0, amp = o.lump == null ? 0.005 : o.lump, seed = o.seed || 1, neck = o.neck || 0;
+    var pos = [], uv = [], idx = [], i, j;
+    function pt(u, v, flat) {
+      var hu = Math.pow(1 - Math.pow(Math.abs(u), n), 1 / n), hv = Math.pow(1 - Math.pow(Math.abs(v), n), 1 / n);
+      var nk = 0; if (neck > 0) { var s = (u - (1 - neck)) / neck; if (s > 0) { s = Math.min(1, s); nk = s * s * (3 - 2 * s); } }
+      var ws = (1 - taper * u * u) * (1 - 0.72 * nk), hs = 1 - 0.55 * nk;
+      var noise = amp * (Math.sin(5.1 * u + 2.3 * v + seed) + 0.6 * Math.sin(9.7 * u - 3.1 * v + seed * 2.1) + 0.4 * Math.sin(15.3 * u + 7.7 * v + seed * 0.7));
+      var y = flat ? 0 : Math.max(0, T * hu * hv * hs + noise * hu * hv * 3);
+      return [u * L / 2, y, v * W / 2 * ws];
+    }
+    function grid(flat) {
+      var base = pos.length / 3;
+      for (i = 0; i <= nu; i++) for (j = 0; j <= nv; j++) {
+        var u = -1 + 2 * i / nu, v = -1 + 2 * j / nv, p = pt(u, v, flat);
+        pos.push(p[0], p[1], p[2]); uv.push((u + 1) / 2, (v + 1) / 2);
+      }
+      for (i = 0; i < nu; i++) for (j = 0; j < nv; j++) {
+        var a = base + i * (nv + 1) + j, b = a + (nv + 1), c = b + 1, d = a + 1;
+        if (flat) idx.push(a, b, c, a, c, d); else idx.push(a, c, b, a, d, c);
+      }
+    }
+    grid(false); grid(true);
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
     return g;
   }
+  // open bag tube (standing), radial wrinkles; unit radius, height h, bottom at y=0
+  function bagTubeGeo(h, seed) {
+    var g = new THREE.CylinderGeometry(1, 1, h, 44, 26, true); g.translate(0, h / 2, 0);
+    var p = g.attributes.position;
+    for (var i = 0; i < p.count; i++) {
+      var x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x), r = Math.sqrt(x * x + z * z);
+      var k = 1 + 0.035 * Math.sin(7 * a + y * 9 + seed) + 0.025 * Math.sin(13 * a - y * 5 + seed * 1.7) + 0.02 * Math.sin(3 * a + y * 21 + seed * 0.4);
+      var top = Math.max(0, (y - h * 0.9) / (h * 0.1)); k *= 1 + 0.05 * top * Math.sin(17 * a + seed);
+      p.setX(i, x / r * k); p.setZ(i, z / r * k);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+  function dashedLine(pts, color) {
+    var geo = new THREE.BufferGeometry().setFromPoints(pts.map(function (q) { return new V3(q[0], q[1], q[2]); }));
+    var l = new THREE.LineSegments(geo, new THREE.LineDashedMaterial({ color: color, dashSize: 0.025, gapSize: 0.018 })); l.computeLineDistances(); return l;
+  }
+  var logoTexture = function () { var t = imgTex(logoImg, 1, 1); t.center.set(0.5, 0.5); t.rotation = Math.PI; return t; };
+
+  // winged bag lying (real drawing): pillow over the soil part, flat sheet 1.50 x 0.75, V-shaped upper flap, printed seams and fold lines
+  function wingedLying() {
+    var g = new THREE.Group();
+    var body = new THREE.Mesh(pillowGeo2(0.75, 0.45, 0.16, { n: 3.0, taper: 0.05, lump: 0.004, seed: 2 }), fabricMat('ggs', 4, 3, { map: logoTexture() })); body.position.y = 0.006; g.add(body);
+    var sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.006, 0.75), fabricMat('ggs', 6, 3)); sheet.position.set(0, 0.003, 0.15); g.add(sheet);
+    var shp = new THREE.Shape(); shp.moveTo(-0.095, 0); shp.lineTo(0.095, 0); shp.lineTo(0.375, 0.3); shp.lineTo(-0.375, 0.3); shp.lineTo(-0.095, 0);
+    var fl = new THREE.Mesh(new THREE.ShapeGeometry(shp), fabricMat('ggs', 2, 2)); fl.rotation.x = Math.PI / 2; fl.position.set(0, 0.0085, 0.225); g.add(fl);
+    [-1, 1].forEach(function (s) {
+      g.add(dashedLine([[s * 0.375, 0.0095, -0.225], [s * 0.375, 0.0095, 0.525]], 0xf2f2f2));
+      g.add(dashedLine([[s * 0.35, 0.0095, -0.225], [s * 0.35, 0.0095, 0.525]], 0xf2f2f2));
+      g.add(dashedLine([[s * 0.375, 0.0095, 0.525], [s * 0.095, 0.0095, 0.225]], 0xf2f2f2));
+    });
+    return g;
+  }
+  // bunker sandbag lying: woven green polypropylene, lumpy, gathered neck with tie cord and frilled tail, double-stitched sewn end
+  function bunkerLying() {
+    var g = new THREE.Group(), L = 0.58, ox = -0.04;
+    var body = new THREE.Mesh(pillowGeo2(L, 0.31, 0.13, { n: 2.6, taper: 0.1, lump: 0.005, seed: 5, neck: 0.26 }), fabricMat('bunker', 7, 4)); body.position.set(ox, 0.002, 0); g.add(body);
+    var cord = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.0065, 8, 22), mat(0xd9c9a0)); cord.rotation.y = Math.PI / 2; cord.position.set(ox + L / 2 * 0.80, 0.034, 0); g.add(cord);
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 14, 1, true), fabricMat('bunker', 2, 2)); tail.rotation.z = -Math.PI / 2; tail.scale.set(1, 1, 0.5); tail.position.set(ox + L / 2 + 0.045, 0.026, 0); g.add(tail);
+    var seam = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.004, 0.26), mat(0x232c1f)); seam.position.set(ox - L / 2 * 0.94, 0.012, 0); g.add(seam);
+    return g;
+  }
+  // Flex MSE GTX bag lying: dark needle-punched nonwoven, green stitched ends, folded closure flap
+  function flexLying() {
+    var g = new THREE.Group(), L = 0.76;
+    var body = new THREE.Mesh(pillowGeo2(L, 0.30, 0.14, { n: 3.3, taper: 0.07, lump: 0.0035, seed: 9 }), fabricMat('flex', 4, 2)); body.position.y = 0.002; g.add(body);
+    [-1, 1].forEach(function (s) { var st = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.003, 0.27), mat(0x45b05a)); st.position.set(s * L / 2 * 0.955, 0.0, 0); st.position.y = 0.012; g.add(st); });
+    var fold = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.006, 0.255), fabricMat('flex', 0.5, 0.5)); fold.position.set(L / 2 + 0.035, 0.005, 0); g.add(fold);
+    return g;
+  }
+
   function sprite(text, color, w, h) {
     var c = document.createElement('canvas'); c.width = 1100; c.height = 140;
     var x = c.getContext('2d'); x.font = 'bold 54px Tahoma, "Noto Sans Thai", sans-serif'; x.fillStyle = color || '#222'; x.textBaseline = 'middle';
@@ -149,13 +265,26 @@
 
   // ================= A: winged bag =================
   function ScenarioA(ox, oz) {
-    var root = newRoot(ox, oz), tan = mat(CL.tan), shellMat = mat(0xf5efe0, { transparent: true, opacity: 0.35, depthWrite: false });
+    var root = newRoot(ox, oz), tan = fabricMat('ggs', 0.7, 1.5);
     // real drawing (flapped soilbag detail): sheet 1.50 x 0.75 m, side flaps 0.35 m each, seams 2.5 cm,
     // soil filling part 0.75 x 0.45 m at the bottom centre, upper flap = V-shaped region above it
     var bag = new THREE.Group(); root.add(bag);
-    var pocket = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.45, 1), shellMat); pocket.position.y = 0.225; bag.add(pocket);
-    var edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.75, 0.45, 1)), new THREE.LineBasicMaterial({ color: 0x8a6b30 })); pocket.add(edges);
-    var seamMat = mat(0x6b5428);
+    var pocket = new THREE.Group(); bag.add(pocket);
+    var pFront = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.45, 24, 14), shellFabric('ggs', 3, 2, { map: logoTexture() }));
+    var pBack = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.45, 24, 14), shellFabric('ggs', 3, 2));
+    pFront.position.y = 0.225; pBack.position.y = 0.225; pocket.add(pFront, pBack);
+    function setPocket(th) {
+      [pFront, pBack].forEach(function (m, k) {
+        var pp = m.geometry.attributes.position, sgn = k ? -1 : 1;
+        for (var i = 0; i < pp.count; i++) {
+          var uu = pp.getX(i) / 0.375, vv = pp.getY(i) / 0.225, hu = Math.pow(1 - Math.pow(Math.abs(uu), 2.4), 1 / 2.4), hv = Math.pow(1 - Math.pow(Math.abs(vv), 2.4), 1 / 2.4);
+          pp.setZ(i, sgn * (0.004 + th / 2 * hu * hv));
+        }
+        pp.needsUpdate = true; m.geometry.computeVertexNormals();
+      });
+    }
+    setPocket(0.02);
+    var seamMat = mat(0xd5d5d8);
     [-1, 1].forEach(function (s) {
       var w = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.75, 0.012), tan); w.position.set(s * 0.5625, 0.375, 0); bag.add(w);
       var sm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.75, 0.016), seamMat); sm.position.set(s * 0.375, 0.375, 0); bag.add(sm);
@@ -164,12 +293,12 @@
     });
     var fl = [[-0.375, 0.75, 0], [-0.095, 0.45, 0], [0.375, 0.75, 0], [0.095, 0.45, 0], [-0.375, 0.45, 0], [0.375, 0.45, 0]];
     var foldGeo = new THREE.BufferGeometry().setFromPoints(fl.map(function (q) { return v3(q[0], q[1], 0.01); }));
-    var fold = new THREE.LineSegments(foldGeo, new THREE.LineDashedMaterial({ color: 0x3a2c10, dashSize: 0.03, gapSize: 0.02 })); fold.computeLineDistances(); bag.add(fold);
+    var fold = new THREE.LineSegments(foldGeo, new THREE.LineDashedMaterial({ color: 0xf0f0f0, dashSize: 0.03, gapSize: 0.02 })); fold.computeLineDistances(); bag.add(fold);
     // upper flap (V region): pivots on the soil-part top edge
     var flap = new THREE.Group(); flap.position.y = 0.45; bag.add(flap);
     var fs = new THREE.Shape(); fs.moveTo(-0.095, 0); fs.lineTo(0.095, 0); fs.lineTo(0.375, 0.3); fs.lineTo(-0.375, 0.3); fs.lineTo(-0.095, 0);
-    flap.add(new THREE.Mesh(new THREE.ShapeGeometry(fs), mat(CL.tanl, { transparent: true, opacity: 0.8 })));
-    flap.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.ShapeGeometry(fs)), new THREE.LineBasicMaterial({ color: 0x8a6b30 })));
+    flap.add(new THREE.Mesh(new THREE.ShapeGeometry(fs), fabricMat('ggs', 2, 2)));
+    flap.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.ShapeGeometry(fs)), new THREE.LineBasicMaterial({ color: 0xe8e8e8 })));
     function flapCorner(side, ang) { return v3(side * 0.375, 0.45 + 0.3 * Math.cos(ang), 0.3 * Math.sin(ang)); }
     // sand height-field
     var sg = new THREE.BoxGeometry(0.72, 1, 1, 24, 1, 1), sbase = sg.attributes.position.array.slice();
@@ -207,7 +336,7 @@
       // the bag is pushed, squeezed and shaken when P2 kneads it; P1 holds the top corners so the bag sways between the hands
       bag.rotation.set(0.04 * Math.sin(t * 22) * s, 0, 0.16 * s); bag.position.set(-0.08 * s, 0.025 * Math.sin(t * 22) * s, 0); bag.scale.set(1 - 0.07 * s, 1 + 0.03 * s, 1); bag.updateMatrix();
       flap.rotation.x = ang;
-      var thick = 0.02 + 0.13 * Math.min(1, fill / 0.97); pocket.scale.z = thick * (1 + 0.18 * s);
+      var thick = 0.02 + 0.13 * Math.min(1, fill / 0.97); setPocket(thick * (1 + 0.18 * s));
       setSand(fill, spread, thick * 0.8 * (1 + 0.18 * s));
       var rl = flapCorner(-1, ang), rr = flapCorner(1, ang);
       if (si === 0) { rl = lerpV(v3(-0.3, 0.55, -0.45), rl, ease(u)); rr = lerpV(v3(0.3, 0.55, -0.45), rr, ease(u)); }
@@ -239,11 +368,12 @@
 
   // ================= B: bunker bag =================
   function ScenarioB(ox, oz) {
-    var root = newRoot(ox, oz), shellMat = mat(0xf5efe0, { transparent: true, opacity: 0.35, depthWrite: false });
-    var col = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.75, 20, 1, true), shellMat); col.position.y = 0.375; root.add(col);
+    var root = newRoot(ox, oz);
+    var col = new THREE.Mesh(bagTubeGeo(0.75, 3), shellFabric('bunker', 6, 5)); root.add(col);
+    var cap = new THREE.Mesh(new THREE.CircleGeometry(1, 36), shellFabric('bunker', 3, 3)); cap.rotation.x = -Math.PI / 2; cap.position.y = 0.002; root.add(cap);
+    var rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.07, 8, 48), mat(0x3d4f35)); rim.rotation.x = -Math.PI / 2; rim.position.y = 0.75; root.add(rim);
     var sand = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 20), mat(CL.sand)); root.add(sand);
-    var lying = new THREE.Group(); var lp = new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green)); lp.position.x = -0.115; lying.add(lp);
-    var tail = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.012, 0.14), mat(CL.green)); tail.position.set(0.275, 0.006, 0); lying.add(tail); root.add(lying); lying.rotation.y = Math.PI / 2;
+    var lying = bunkerLying(); root.add(lying); lying.rotation.y = Math.PI / 2;
     var p1 = new Person(0x2e8b57), p2 = new Person(0xe07b00); place(p1, 0, -0.62, 0); place(p2, 0.98, 0, -Math.PI / 2); root.add(p1.g, p2.g);
     var shovel = new Shovel(); root.add(shovel.g); var stream = streamMesh(); root.add(stream);
     var pl = v3(0.95, 0, 0.95); root.add(pile(pl.x, pl.z, 0.28));
@@ -254,7 +384,7 @@
       else if (si === 2) { level = 0.25 + 0.25 * u; cyc = (u * 3) % 1; }
       else if (si === 3) { level = 0.5; lay = ease((u - 0.35) / 0.4); }
       var rx = lerp(0.175, 0.155, open), ry = lerp(0.012, 0.10, open);
-      col.scale.set(rx, 1, ry); col.visible = lay < 0.5; sand.visible = level > 0.005 && lay < 0.5;
+      col.scale.set(rx, 1, ry); col.visible = lay < 0.5; cap.scale.set(rx, ry, 1); rim.scale.set(rx, ry, 1); cap.visible = rim.visible = col.visible; sand.visible = level > 0.005 && lay < 0.5;
       sand.scale.set(rx * 0.93, Math.max(0.001, level), ry * 0.9); sand.position.y = level / 2;
       lying.visible = lay >= 0.5;
       var rl = v3(-0.16, 0.76, 0), rr = v3(0.16, 0.76, 0);
@@ -293,11 +423,12 @@
     [-1, 1].forEach(function (s) { bx(s * 0.21, top + 0.02, 0, 0.11, 0.04, d); }); bx(0, top + 0.02, 0, w, 0.04, 0.07);
     [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (s) { bx(s[0] * (w / 2 - 0.05), top / 2, s[1] * (d / 2 - 0.05), 0.06, top, 0.06); });
     root.add(jig);
-    var shell = mat(0x6b665f, { transparent: true, opacity: 0.45, depthWrite: false }), bags = [];
+    var bags = [];
     for (var i = 0; i < 3; i++) for (var j = 0; j < 2; j++) {
       var bg = new THREE.Group(), x = -0.42 + i * 0.42, z = -0.12 + j * 0.24; bg.position.set(x, 0, z);
-      var cyl = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.77, 16, 1, true), shell); cyl.position.y = 0.415;
-      var snd = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 16), mat(CL.sand)); bg.add(cyl, snd); root.add(bg); jig.add(bg); bags.push({ g: bg, cyl: cyl, snd: snd });
+      var cyl = new THREE.Mesh(bagTubeGeo(0.77, i * 2 + j + 1), shellFabric('flex', 4, 4)); cyl.position.y = 0.03;
+      var bcap = new THREE.Mesh(new THREE.CircleGeometry(1, 28), shellFabric('flex', 1, 1)); bcap.rotation.x = -Math.PI / 2; bcap.position.y = 0.032;
+      var snd = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 16), mat(CL.sand)); bg.add(cyl, bcap, snd); root.add(bg); jig.add(bg); bags.push({ g: bg, cyl: cyl, cap: bcap, snd: snd });
     }
     var heap = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(CL.sand, { flatShading: true })); heap.position.y = top + 0.04; root.add(heap);
     // skid steer
@@ -311,7 +442,7 @@
     root.add(ss);
     var palletG = new THREE.Group(); palletG.position.set(0, 0, 0); root.add(palletG);
     var pb = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.9), wood); pb.position.y = 0.06; palletG.add(pb);
-    var pbags = []; for (var k = 0; k < 4; k++) for (var r = 0; r < 3; r++) { var m = new THREE.Mesh(pillowGeo(0.76, 0.30, 0.14, 3.4), mat(CL.flex)); m.position.set(0, 0.12 + k * 0.125, -0.31 + r * 0.31); palletG.add(m); pbags.push(m); }
+    var pbags = []; for (var k = 0; k < 4; k++) for (var r = 0; r < 3; r++) { var m = flexLying(); m.position.set(0, 0.12 + k * 0.125, -0.31 + r * 0.31); palletG.add(m); pbags.push(m); }
     var p1 = new Person(0x2e8b57), p2 = new Person(0xe07b00); place(p1, -1.05, 0, Math.PI / 2); place(p2, 1.05, 0, -Math.PI / 2); root.add(p1.g, p2.g);
     function update(si, u, t) {
       var open = si === 0 ? ease(u) : 1, fill = 0, heapS = 0, tilt = 0, sweep = 0, tamp = 0;
@@ -319,7 +450,7 @@
       else if (si === 2) { fill = 0.55 + 0.45 * ease(u); heapS = 1 - ease(u / 0.9); sweep = 1; tamp = u > 0.85 ? 1 : 0; tilt = 0.9 * (1 - ease(u / 0.3)); }
       else if (si === 3) { fill = 1; }
       jig.visible = si !== 3; heap.visible = heapS > 0.02; palletG.visible = si === 3;
-      bags.forEach(function (b, n) { b.cyl.scale.set(0.15, 1, lerp(0.012, 0.075, open)); b.snd.visible = fill > 0.01; var lv = Math.max(0.001, 0.77 * fill * (tamp ? 0.97 : 1)); b.snd.scale.set(0.14, lv, 0.068 * open); b.snd.position.y = 0.03 + lv / 2; });
+      bags.forEach(function (b, n) { b.cyl.scale.set(0.15, 1, lerp(0.012, 0.075, open)); b.cap.scale.set(0.15, lerp(0.012, 0.075, open), 1); b.snd.visible = fill > 0.01; var lv = Math.max(0.001, 0.77 * fill * (tamp ? 0.97 : 1)); b.snd.scale.set(0.14, lv, 0.068 * open); b.snd.position.y = 0.03 + lv / 2; });
       heap.scale.set(0.62 * heapS + 0.01, 0.3 * heapS + 0.01, 0.3 * heapS + 0.01);
       bucket.rotation.x = tilt * 0.9; ss.position.z = -2.6; setLimb(arms[0].m, v3(-0.5, 1.0, -0.4), v3(-0.5, 0.85, 0.85)); setLimb(arms[1].m, v3(0.5, 1.0, -0.4), v3(0.5, 0.85, 0.85));
       p1.walk = null; p2.walk = null;
@@ -368,8 +499,8 @@
     var root = newRoot(0, 0);
     var pe = new Person(0xe07b00); place(pe, -2.3, 0.2, 0); pe.bend = 0; pe.crouch = 0; root.add(pe.g); pe.update(root, 0);
     var wb = wingedLying(); root.add(wb);
-    var bb = new THREE.Group(); var bp = new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green)); bp.position.x = -0.115; bb.add(bp); var bt = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.012, 0.14), mat(CL.green)); bt.position.set(0.275, 0.006, 0); bb.add(bt); bb.position.set(2.4, 0, 0); root.add(bb);
-    var fb = new THREE.Mesh(pillowGeo(0.76, 0.30, 0.14, 3.4), mat(CL.flex)); fb.position.set(4.7, 0, 0); root.add(fb);
+    var bb = bunkerLying(); bb.position.set(2.4, 0, 0); root.add(bb);
+    var fb = flexLying(); fb.position.set(4.7, 0, 0); root.add(fb);
     function lab(name, w, x, color, wc) { var s = sprite(name, color, 2.6); s.position.set(x - 0.9, 1.5, 0.3); root.add(s); var s2 = sprite(w, wc, 2.6); s2.position.set(x - 0.9, 1.2, 0.3); root.add(s2); }
     lab('กระสอบมีปีก (GGS)', 'ทราย ~55.6 ลิตร · ~78–80 กก.', 0, '#8a5a14', '#cc0000');
     lab('กระสอบบังเกอร์', 'ทราย ~11–17 ลิตร · ~15–24 กก.', 2.4, '#2f4f25', '#008800');
@@ -392,8 +523,8 @@
     var g = new THREE.Group();
     function add(geo, color, x, y, z, ry) { var m = new THREE.Mesh(geo, mat(color)); m.position.set(x, y, z); m.rotation.y = ry || 0; g.add(m); }
     if (kind === 'A') { for (var l = 0; l < 2; l++) { var wbg = wingedLying(); wbg.position.set(0, 0.385 + l * 0.2, 0.33); wbg.rotation.y = Math.PI / 2; wbg.scale.set(0.7, 1, 0.7); g.add(wbg); } }
-    else if (kind === 'B') { var layer = 0; [2, 2, 2, 1].forEach(function (n) { for (var k = 0; k < n; k++) add(pillowGeo(0.52, 0.31, 0.13, 3), CL.green, n === 2 ? (k ? 0.15 : -0.15) : 0, 0.385 + layer * 0.13, 0.33, Math.PI / 2); layer++; }); }
-    else { for (var l2 = 0; l2 < 2; l2++) for (var k2 = 0; k2 < 2; k2++) add(pillowGeo(0.76, 0.30, 0.14, 3.4), CL.flex, k2 ? 0.16 : -0.16, 0.385 + l2 * 0.14, 0.33, Math.PI / 2); }
+    else if (kind === 'B') { var layer = 0; [2, 2, 2, 1].forEach(function (n) { for (var k = 0; k < n; k++) { var bb_ = bunkerLying(); bb_.position.set(n === 2 ? (k ? 0.15 : -0.15) : 0, 0.385 + layer * 0.13, 0.33); bb_.rotation.y = Math.PI / 2; g.add(bb_); } layer++; }); }
+    else { for (var l2 = 0; l2 < 2; l2++) for (var k2 = 0; k2 < 2; k2++) { var fb_ = flexLying(); fb_.position.set(k2 ? 0.16 : -0.16, 0.385 + l2 * 0.14, 0.33); fb_.rotation.y = Math.PI / 2; g.add(fb_); } }
     return g;
   }
   function ScenarioBarrow() {
@@ -428,8 +559,8 @@
     var lanes = [{ k: 'A', z: -2.5, t: 'A มีปีก ~78–80 กก. ต้อง 2 คนต่อใบ' }, { k: 'B', z: 0.1, t: 'B บังเกอร์ ~15–24 กก. 1 คนต่อใบ' }, { k: 'C', z: 2.7, t: 'C Flex ~45 กก. 1-2 คน' }], items = [];
     function bagMesh(k) {
       if (k === 'A') { var wg = wingedLying(); wg.scale.set(0.75, 1, 0.75); return wg; }
-      if (k === 'B') return new THREE.Mesh(pillowGeo(0.52, 0.31, 0.13, 3), mat(CL.green));
-      return new THREE.Mesh(pillowGeo(0.76, 0.30, 0.14, 3.4), mat(CL.flex));
+      if (k === 'B') return bunkerLying();
+      return flexLying();
     }
     lanes.forEach(function (ln) {
       var n = ln.k === 'A' ? 2 : 1, ps = []; for (var i = 0; i < n; i++) { var p = new Person(i ? 0xe07b00 : 0x2e8b57); ps.push(p); root.add(p.g); }
@@ -462,8 +593,8 @@
   var scene = new THREE.Scene(); scene.background = new THREE.Color(0xdbe7f1);
   var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
   var controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xb9b09c, 0.85));
-  var sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(4, 8, 6); scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb9b09c, 1.0));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(4, 8, 6); scene.add(sun);
   var ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0xdcd8cc, roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.002; scene.add(ground);
   var grid = new THREE.GridHelper(40, 40, 0xb8b4a8, 0xcbc7ba); grid.position.y = 0; scene.add(grid);
 
@@ -501,6 +632,7 @@
   tabs.forEach(function (t) { var b = document.createElement('button'); b.textContent = t.t; b.dataset.id = t.id; b.onclick = function () { select(t.id); }; tabsEl.appendChild(b); });
   document.querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { view(b.dataset.view); }; });
   playBtn.onclick = function () { playing = !playing; if (playing && T >= total - 0.01) T = 0; };
+  document.getElementById('xray').onclick = function () { setXray(!XR.on); this.classList.toggle('on', XR.on); };
   document.getElementById('restart').onclick = function () { T = 0; playing = true; };
   document.getElementById('speed').onchange = function (e) { speed = parseFloat(e.target.value); };
   document.getElementById('loop').onchange = function (e) { loopOn = e.target.checked; };

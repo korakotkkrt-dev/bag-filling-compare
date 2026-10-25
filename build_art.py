@@ -1,7 +1,7 @@
 # builds art.html (claude.ai artifact version) from template.html + libs.js + app.js
 import re
 t=open('template.html',encoding='utf-8').read()
-libs=open('libs.js',encoding='utf-8').read(); app=open('app.js',encoding='utf-8').read()
+libs=open('libs.js',encoding='utf-8').read(); app=open('tex_data.js',encoding='utf-8').read()+open('app.js',encoding='utf-8').read()
 style=re.search(r'<style>(.*?)</style>',t,re.S).group(1)
 body=t[t.index('<body>')+6:t.index('</body>')].replace('<script>/*LIBS*/</script>','').replace('<script>/*APP*/</script>','')
 style=style.replace("@media (prefers-color-scheme:dark){:root{--bg:#16181a;--surface:#1e2124;--fg:#e8e5dc;--muted:#9b978b;--line:#343833;--accent:#6fbf93;--accent-fg:#10231a;--warn:#e0b070;--warn-bg:#2b2417}}","@media (prefers-color-scheme:dark){:root:not([data-theme=\"light\"]){--bg:#16181a;--surface:#1e2124;--fg:#e8e5dc;--muted:#9b978b;--line:#343833;--accent:#6fbf93;--accent-fg:#10231a;--warn:#e0b070;--warn-bg:#2b2417;color-scheme:dark}}\n:root[data-theme=\"dark\"]{--bg:#16181a;--surface:#1e2124;--fg:#e8e5dc;--muted:#9b978b;--line:#343833;--accent:#6fbf93;--accent-fg:#10231a;--warn:#e0b070;--warn-bg:#2b2417;color-scheme:dark}")

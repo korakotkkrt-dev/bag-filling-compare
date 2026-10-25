@@ -1,5 +1,5 @@
 t = open('template.html', encoding='utf-8').read()
 libs = open('libs.js', encoding='utf-8').read()
-app = open('app.js', encoding='utf-8').read()
+app = open('tex_data.js', encoding='utf-8').read() + open('app.js', encoding='utf-8').read()
 open('index.html', 'w', encoding='utf-8').write(t.replace('/*LIBS*/', libs, 1).replace('/*APP*/', app, 1))
 print('built')

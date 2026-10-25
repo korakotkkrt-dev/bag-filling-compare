@@ -17,7 +17,7 @@ h1{font-size:19px;margin:0 0 2px}
 .sub{color:var(--muted);font-size:13px}
 #tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 16px;-webkit-overflow-scrolling:touch}
 #tabs button,#ctrl button,#steps button,.views button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:8px 12px;font:inherit;font-size:14px;white-space:nowrap;cursor:pointer}
-#tabs button.on,#steps button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.views button.on,#tabs button.on,#steps button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 #stage{flex:1;min-height:340px;position:relative;touch-action:none;margin:0 16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 #stage canvas{display:block}
 #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted)}
@@ -65,7 +65,7 @@ th{background:var(--bg)}
     <label style="font-size:13px"><input id="loop" type="checkbox" checked> วนซ้ำ</label>
   </div>
   <div id="steps" style="display:flex"></div>
-  <div class="views"><button data-view="front">หน้า</button> <button data-view="obl">เฉียง</button> <button data-view="side">ข้าง</button> <button data-view="top">บน</button></div>
+  <div class="views"><button data-view="front">หน้า</button> <button data-view="obl">เฉียง</button> <button data-view="side">ข้าง</button> <button data-view="top">บน</button> <button id="xray" title="ทำให้ผ้ากระสอบโปร่งเพื่อดูทรายข้างใน">มองทะลุถุง</button></div>
 </div>
 <div class="note">ภาพจำลองเพื่อเทียบขั้นตอน ไม่ใช่เวลาจริงหน้างาน ขนาดและน้ำหนักเป็นค่าคำนวณ/ประมาณจากแบบกระสอบมีปีก (690044 CE แผ่น 8/8) ป้ายสินค้ากระสอบบังเกอร์ และคลิปของ Flex MSE ยังไม่ได้ชั่งหรือวัดของจริง ท่าทางคนและเครื่องมือเป็นแบบง่าย ปากกรวยของกระสอบมีปีกวาดตามแบบ (กว้างบน คอแคบ ~0.19 ม.)</div>
 <footer>ลากเพื่อหมุนมุมมอง · บีบนิ้ว/เลื่อนล้อเพื่อซูม · ไฟล์ SketchUp และภาพสรุปอยู่ในโฟลเดอร์ <code>sketchup/</code> ของโปรเจกต์</footer>
