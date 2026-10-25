@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เทียบวิธีกรอกกระสอบทราย 3 แบบ</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="อนิเมชั่น 3 มิติ เทียบการกรอกกระสอบมีปีก กระสอบบังเกอร์ และ Flex MSE ทั้งขนาด ขั้นตอน และการขน (งานพัทยา)">
+<style>
+:root{--bg:#f4f1ea;--surface:#fbf9f4;--fg:#26231d;--muted:#6c675c;--line:#ddd7c9;--accent:#2f6b4f;--accent-fg:#fff;--warn:#9a5b12;--warn-bg:#f6e9d2}
+@media (prefers-color-scheme:dark){:root{--bg:#16181a;--surface:#1e2124;--fg:#e8e5dc;--muted:#9b978b;--line:#343833;--accent:#6fbf93;--accent-fg:#10231a;--warn:#e0b070;--warn-bg:#2b2417}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:Tahoma,"Noto Sans Thai",system-ui,sans-serif;display:flex;flex-direction:column;min-height:100dvh}
+header{padding:12px 16px 6px}
+h1{font-size:19px;margin:0 0 2px}
+.sub{color:var(--muted);font-size:13px}
+#tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 16px;-webkit-overflow-scrolling:touch}
+#tabs button,#ctrl button,#steps button,.views button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:8px 12px;font:inherit;font-size:14px;white-space:nowrap;cursor:pointer}
+#tabs button.on,#steps button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+#stage{flex:1;min-height:340px;position:relative;touch-action:none;margin:0 16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+#stage canvas{display:block}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.cap{flex-shrink:0;margin:10px 16px 0;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+#capTitle{font-weight:700;font-size:16px}
+#capL1,#capL2{font-size:14px;color:var(--fg)}
+#capL2{color:var(--muted)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px}
+#ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+#slider{flex:1;min-width:140px}
+#steps{gap:6px}
+select{font:inherit;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.note{margin:0 16px 14px;padding:8px 12px;background:var(--warn-bg);color:var(--warn);border-radius:8px;font-size:12.5px;line-height:1.5}
+footer{padding:0 16px 18px;color:var(--muted);font-size:12px}
+a{color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--surface)}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--bg)}
+</style>
+</head>
+<body>
+<header>
+  <h1>เทียบวิธีกรอกกระสอบทราย 3 แบบ</h1>
+  <div class="sub">กระสอบมีปีก (GGS) · กระสอบบังเกอร์ · Flex MSE — ขนาด ขั้นตอนกรอก และการขน (งานพัทยา)</div>
+</header>
+<div id="tabs"></div>
+<div id="stage"><div id="loading">กำลังโหลด…</div></div>
+<div id="info" style="display:none;margin:10px 16px 0;flex-shrink:0;overflow-x:auto"><table>
+<tr><th></th><th>กระสอบมีปีก (GGS)</th><th>กระสอบบังเกอร์</th><th>Flex MSE</th></tr>
+<tr><td>ผ้าก่อนกรอก</td><td>1.50 x 0.75 ม.<br>ส่วนบรรจุ 0.75 x 0.45 ม.</td><td>0.35 x 0.75 ม.<br>(ป้ายสินค้า)</td><td>ไม่ระบุ</td></tr>
+<tr><td>หลังกรอก</td><td>~0.75 x 0.45 x 0.20 ม.</td><td>~0.75 x 0.31 x 0.13 ม. (กรอก 2/3)</td><td>0.66-0.71 x 0.30 x 0.14 ม.</td></tr>
+<tr><td>ทรายต่อใบ</td><td>~55 ลิตร</td><td>~17 ลิตร</td><td>32 ลิตร (ขั้นต่ำ)</td></tr>
+<tr><td>น้ำหนัก</td><td><b style="color:#c00">~89 กก.</b></td><td><b style="color:#080">~26 กก.</b></td><td><b style="color:#c60">32 กก. (ดินผสม) / ~51 กก. (ทรายล้วน)</b></td></tr>
+<tr><td>ยกต่อใบ</td><td>2 คน</td><td>1 คน</td><td>ผู้ผลิต: 2 คน</td></tr>
+</table></div>
+<div class="cap"><div id="capTitle"></div><div id="capL1"></div><div id="capL2"></div></div>
+<div class="bar">
+  <div id="ctrl">
+    <button id="play">หยุด</button><button id="restart">เริ่มใหม่</button>
+    <input id="slider" type="range" min="0" max="1000" value="0">
+    <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option></select>
+    <label style="font-size:13px"><input id="loop" type="checkbox" checked> วนซ้ำ</label>
+  </div>
+  <div id="steps" style="display:flex"></div>
+  <div class="views"><button data-view="front">หน้า</button> <button data-view="obl">เฉียง</button> <button data-view="side">ข้าง</button> <button data-view="top">บน</button></div>
+</div>
+<div class="note">ภาพจำลองเพื่อเทียบขั้นตอน ไม่ใช่เวลาจริงหน้างาน ขนาดและน้ำหนักเป็นค่าคำนวณ/ประมาณจากแบบกระสอบมีปีก (690044 CE แผ่น 8/8) ป้ายสินค้ากระสอบบังเกอร์ และคลิปของ Flex MSE ยังไม่ได้ชั่งหรือวัดของจริง ท่าทางคนและเครื่องมือเป็นแบบง่าย ปากกรวยของกระสอบมีปีกวาดตามแบบ (กว้างบน คอแคบ ~0.19 ม.)</div>
+<footer>ลากเพื่อหมุนมุมมอง · บีบนิ้ว/เลื่อนล้อเพื่อซูม · ไฟล์ SketchUp และภาพสรุปอยู่ในโฟลเดอร์ <code>sketchup/</code> ของโปรเจกต์</footer>
+<script>/*LIBS*/</script>
+<script>/*APP*/</script>
+</body>
+</html>
