@@ -1726,8 +1726,8 @@ var TEX_LOGO='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
   var grid = new THREE.GridHelper(40, 40, 0xb8b4a8, 0xcbc7ba); grid.position.y = 0; scene.add(grid);
 
   var tabs = [
-    { id: 'sizes', t: 'ขนาด', f: ScenarioSizes }, { id: 'a', t: 'กรอก: มีปีก', f: function () { return ScenarioA(0, 0); } },
-    { id: 'b', t: 'กรอก: บังเกอร์', f: function () { return ScenarioB(0, 0); } }, { id: 'c', t: 'กรอก: Flex MSE', f: function () { return ScenarioC(0, 0); } },
+    { id: 'sizes', t: 'ขนาด', f: ScenarioSizes }, { id: 'a', t: 'กระสอบมีปีก', f: function () { return ScenarioA(0, 0); } },
+    { id: 'b', t: 'กระสอบบังเกอร์', f: function () { return ScenarioB(0, 0); } }, { id: 'c', t: 'Flex MSE', f: function () { return ScenarioC(0, 0); } },
     { id: 'cmp', t: 'เทียบ 3 แบบ', f: ScenarioCompare }, { id: 'bar', t: 'ขนรถเข็น', f: ScenarioBarrow }, { id: 'slope', t: 'ขนขึ้นสโลป', f: ScenarioSlope }
   ];
   var cache = {}, cur = null, curTab = null, T = 0, playing = true, speed = 1, loopOn = true, total = 1, clock = 0;
